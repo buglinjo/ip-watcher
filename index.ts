@@ -10,7 +10,7 @@ import Cloudflare from 'cloudflare'
 const cf: Cloudflare = new Cloudflare({token: process.env.CF_TOKEN})
 
 async function main(): Promise<void> {
-    const ip = '8.8.8.8'//await getGlobalIP()
+    const ip = await getGlobalIP()
 
     console.log(`Current IP Address: ${ip}`)
 
