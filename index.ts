@@ -23,7 +23,7 @@ async function main(): Promise<void> {
             if (dnsRecord.type === 'A' && dnsRecord.content !== ip) {
                 dnsRecord.content = ip
                 updateDNSRecord(zone.id, dnsRecord.id, dnsRecord)
-                sendTelegramMessage(`New home global IP address is: ${ip}`);
+                sendTelegramMessage(`Updating DNS record (${dnsRecord.name}) content to: ${ip}`);
                 console.log(`Updating DNS record (${dnsRecord.name}) content to: ${ip}`)
             }
         })
