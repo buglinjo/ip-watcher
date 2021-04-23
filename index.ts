@@ -4,6 +4,7 @@ dotenv.config();
 
 import * as _ from 'lodash'
 import * as publicIp from 'public-ip'
+import axios from 'axios';
 import Cloudflare from 'cloudflare'
 
 const cf: Cloudflare = new Cloudflare({token: process.env.CF_TOKEN})
@@ -52,6 +53,11 @@ async function updateDNSRecord(zoneId: string, dnsRecordId: string, record: { ty
     // @ts-ignore
     return resp.result
 }
+
+function sendTelegramMessage(message: string) {
+    return axios.post(`${process.env.TELEGRAM_BASE_URL}${process.env.TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${process.env.TELEGRAM_GROUP_ID}&text=${message}`);
+}
+
 
 main().then(() => setInterval(main, 5 * 1000))
 
