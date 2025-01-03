@@ -2,12 +2,16 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-import * as _ from 'lodash'
-import * as publicIp from 'public-ip'
+import _ from 'lodash';
+import publicIp from 'public-ip';
 import axios from 'axios';
 import Cloudflare from 'cloudflare'
+import {RecordEditParams} from "cloudflare/src/resources/dns/records";
 
-const cf: Cloudflare = new Cloudflare({token: process.env.CF_TOKEN})
+const cf: Cloudflare = new Cloudflare({
+    apiEmail: process.env.CF_EMAIL,
+    apiToken: process.env.CF_TOKEN,
+})
 
 async function main(): Promise<void> {
     const ip = await getGlobalIP()
@@ -18,11 +22,16 @@ async function main(): Promise<void> {
 
     _.each(zones, async (zone) => {
         let dnsRecords = await getDNSRecords(zone.id)
-
-        _.each(dnsRecords, (dnsRecord) => {
+        _.each(dnsRecords, (dnsRecord: Cloudflare.DNS.Records.Record) => {
             if (dnsRecord.type === 'A' && dnsRecord.content !== ip) {
-                dnsRecord.content = ip
-                updateDNSRecord(zone.id, dnsRecord.id, dnsRecord)
+                if (!dnsRecord.id) return;
+                let updateRecord: RecordEditParams.ARecord = {
+                    zone_id: zone.id,
+                    name: dnsRecord.name,
+                    type: 'A',
+                    content: ip,
+                }
+                updateDNSRecord(dnsRecord.id, updateRecord)
                 sendTelegramMessage(`Updating DNS record (${dnsRecord.name}) content to: ${ip}`);
                 console.log(`Updating DNS record (${dnsRecord.name}) content to: ${ip}`)
             }
@@ -31,34 +40,33 @@ async function main(): Promise<void> {
 }
 
 async function getGlobalIP(): Promise<string> {
-    return publicIp.v4();
+    return publicIp.publicIpv4();
 }
 
 async function getZones() {
-    const resp = await cf.zones.browse()
+    const resp = await cf.zones.list()
 
     // @ts-ignore
     return resp.result
 }
 
 async function getDNSRecords(zoneId: string) {
-    const resp = await cf.dnsRecords.browse(zoneId)
+    const resp = await cf.dns.records.list({zone_id: zoneId})
 
     // @ts-ignore
     return resp.result
 }
 
-async function updateDNSRecord(zoneId: string, dnsRecordId: string, record: { type: Cloudflare.RecordTypes; name: string; content: string; ttl: number; proxied?: boolean | undefined; }) {
-    const resp = await cf.dnsRecords.edit(zoneId, dnsRecordId, record)
+async function updateDNSRecord(dnsRecordId: string, params: RecordEditParams) {
+    const resp = await cf.dns.records.edit(dnsRecordId, params)
 
     // @ts-ignore
     return resp.result
 }
 
 function sendTelegramMessage(message: string) {
-    return axios.post(`${process.env.TELEGRAM_BASE_URL}${process.env.TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${process.env.TELEGRAM_GROUP_ID}&text=${message}`);
+    return axios.post(`${process.env.TELEGRAM_BASE_URL}${process.env.TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${process.env.TELEGRAM_CHAT_ID}&text=${message}`);
 }
 
 
 main().then(() => setInterval(main, 5 * 1000))
-
