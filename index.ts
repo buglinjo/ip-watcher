@@ -11,8 +11,9 @@ import {RecordEditParams} from "cloudflare/src/resources/dns/records";
 if (!process.env.CF_EMAIL || !process.env.CF_TOKEN) {
     console.log("No CF_EMAIL or CF_TOKEN set in process.env")
     // Sleep indefinitely
-    setInterval(() => {}, 1 << 30);
-    process.exit(1);
+    setInterval(() => {
+        console.log("Waiting for CF_EMAIL and CF_TOKEN to be set...")
+    }, 1000);
 }
 
 const cf: Cloudflare = new Cloudflare({
