@@ -8,6 +8,13 @@ import axios from 'axios';
 import Cloudflare from 'cloudflare'
 import {RecordEditParams} from "cloudflare/src/resources/dns/records";
 
+if (!process.env.CF_EMAIL || !process.env.CF_TOKEN) {
+    console.log("No CF_EMAIL or CF_TOKEN set in process.env")
+    // Sleep indefinitely
+    setInterval(() => {}, 1 << 30);
+    process.exit(1);
+}
+
 const cf: Cloudflare = new Cloudflare({
     apiEmail: process.env.CF_EMAIL,
     apiToken: process.env.CF_TOKEN,
